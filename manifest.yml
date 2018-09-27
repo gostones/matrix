@@ -1,0 +1,14 @@
+---
+applications:
+- name: matrix
+  health-check-type: http
+  health-check-http-endpoint: /ping
+  memory: 256M
+  disk_quota: 2G
+  instances: 1
+  command: /app/bin/matrix server
+  buildpack: https://github.com/cloudfoundry/binary-buildpack.git
+  env:
+    MATRIX_BIND: ":2022"
+##
+

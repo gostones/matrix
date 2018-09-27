@@ -1,0 +1,22 @@
+##
+.idea
+.gitignore
+#
+*.log
+
+##
+#
+*.sh
+*.go
+*.yml
+Jenkinsfile
+
+build
+docs
+Godeps
+local
+vendor
+#
+
+#we need the following files to be included
+#!server.sh
