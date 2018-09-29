@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gostones/matrix/bot"
 	"github.com/gostones/matrix/chat"
 	"github.com/gostones/matrix/rp"
@@ -19,7 +20,7 @@ var help = `
 
 	Commands:
 		server - server mode
-		bot     - worker
+		bot    - service worker
 		cli    - control agent
 `
 
@@ -158,8 +159,12 @@ func botServer(args []string) {
 
 	port := flags.Int("port", parseInt(os.Getenv("MATRIX_PORT"), 2022), "")
 	url := flags.String("url", os.Getenv("MATRIX_URL"), "")
-	proxy := flags.String("proxy", os.Getenv("http_proxy"), "")
+	proxy := flags.String("proxy", "", "")
 	user := flags.String("name", fmt.Sprintf("bot%v", lport), "")
+
+	to := flags.String("to", "", "target servcie name")
+	remote := flags.String("remote", "", "host:port")
+	local := flags.String("local", "", ":port")
 
 	flags.Parse(args)
 
@@ -167,16 +172,27 @@ func botServer(args []string) {
 		usage()
 	}
 
+	cfg := bot.Config{
+		Host:   "localhost",
+		Port:   lport,
+		Proxy:  *proxy,
+		URL:    *url,
+		UUID:   uuid.New().String(),
+		User:   *user,
+		To:     *to,
+		Remote: *remote,
+		Local:  *local,
+	}
 	//
 	fmt.Fprintf(os.Stdout, "local: %v user: %v\n", lport, user)
 
-	remote := fmt.Sprintf("localhost:%v:localhost:%v", lport, *port)
-	go tunnel.TunClient(*proxy, *url, remote)
+	// remote := fmt.Sprintf("localhost:%v:localhost:%v", lport, *port)
+	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
 
 	sleep := util.BackoffDuration()
 
 	for {
-		rc := bot.Server(*proxy, *url, *user, "localhost", lport)
+		rc := bot.Server(&cfg)
 		sleep(rc)
 	}
 }

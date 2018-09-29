@@ -22,15 +22,30 @@ import (
 //	check   = flag.Duration("c", 30*time.Second, "Duration between alive checks")
 //)
 
-func Server(proxy string, url string, user string, host string, port int) int {
-	ProxyUrl = proxy
-	MatrixUrl = url
+// Config for bot
+type Config struct {
+	Host  string
+	Port  int
+	Proxy string
 
-	fmt.Fprintf(os.Stdout, "Bot proxy: %v server: %v\n", proxy, url)
+	URL  string
+	UUID string
+	User string
 
-	addr := fmt.Sprintf("%s:%d", host, port)
+	//target service
+	To     string
+	Remote string //remote service host:port
+	Local  string //local :port
+}
 
-	if err := Bot(user, addr); err != nil {
+// Server starts bot
+func Server(c *Config) int {
+	ProxyUrl = c.Proxy
+	MatrixUrl = c.URL
+
+	fmt.Fprintf(os.Stdout, "Bot proxy: %v server: %v\n", c.Proxy, c.URL)
+
+	if err := Bot(c); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return 1
 	}

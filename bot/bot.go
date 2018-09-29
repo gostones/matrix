@@ -24,8 +24,10 @@ var active = false
 const maxInputLength int = 1024
 
 // Bot runs the bot
-func Bot(user string, addr string) error {
-	conn, err := dial(addr, user)
+func Bot(c *Config) error {
+	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
+
+	conn, err := dial(addr, c.User)
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,7 @@ func Bot(user string, addr string) error {
 		return err
 	}
 
-	err = session.RequestPty("xterm", 80, maxInputLength, ssh.TerminalModes{})
+	err = session.RequestPty("xterm", 1, maxInputLength, ssh.TerminalModes{})
 	if err != nil {
 		return err
 	}
@@ -58,11 +60,11 @@ func Bot(user string, addr string) error {
 	delay := 5 * time.Second
 
 	go func() {
-		me := fmt.Sprintf(`/me {"name": "%v", "type": "bot", "addr": "%v", "status": "on" }`, user, addr)
+		me := fmt.Sprintf(`/me {"name": "%v", "type": "bot", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
 		fmt.Println("Sending me detail: ", me)
 
 		for {
-			_, err := in.Write([]byte(me + "\r\n"))
+			_, err := send(in, me)
 
 			if err == nil {
 				break
@@ -100,15 +102,41 @@ func Bot(user string, addr string) error {
 			cmd := &Command{
 				cm,
 			}
-			if cmd.Msg == nil || cmd.Msg["cmd"] == "" {
-				continue
-			}
-			robot, err := getRobot(cm.Msg["cmd"])
-			if err != nil {
+
+			if !active {
 				continue
 			}
 
-			if !active {
+			//
+			if cm.Type == "me" && cm.Msg["name"] == c.User && cm.Msg["uuid"] == c.UUID {
+
+				go func() {
+					link := fmt.Sprintf(`/link %v:%v {"remote":"%v", "local":"%v"}`, cm.From, c.To, c.Remote, c.Local)
+					fmt.Printf("establishing link: %v\n", link)
+
+					for {
+						_, err := send(in, link)
+
+						if err == nil {
+							break
+						}
+
+						time.Sleep(delay)
+					}
+					fmt.Printf("link established: %v\n", link)
+
+				}()
+
+				continue
+			}
+
+			//
+			if cmd.Msg == nil || cmd.Msg["cmd"] == "" {
+				continue
+			}
+
+			robot, err := getRobot(cm.Msg["cmd"])
+			if err != nil {
 				continue
 			}
 
@@ -125,7 +153,7 @@ func Bot(user string, addr string) error {
 
 			if response := execute(); response != "" {
 				//TODO check from
-				reply(in, fmt.Sprintf(`/msg %v %s`, cm.From, response))
+				send(in, fmt.Sprintf(`/msg %v %s`, cm.From, response))
 			}
 		}
 
@@ -192,8 +220,8 @@ func Bot(user string, addr string) error {
 //	return &cmd, nil
 //}
 
-func reply(in io.WriteCloser, s string) {
-	in.Write([]byte(s + "\r\n"))
+func send(in io.WriteCloser, s string) (int, error) {
+	return in.Write([]byte(s + "\r\n"))
 }
 
 func dial(addr, user string) (*ssh.Client, error) {

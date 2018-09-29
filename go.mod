@@ -17,6 +17,7 @@ require (
 	github.com/gliderlabs/ssh v0.0.0-20171206204625-ce31f3cc47fe
 	github.com/go-ole/go-ole v0.0.0-20180213002836-a1ec82a652eb
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
+	github.com/google/uuid v1.0.0
 	github.com/gorilla/mux v1.6.2
 	github.com/gorilla/websocket v0.0.0-20170718202341-a69d9f6de432
 	github.com/gostones/ssh-chat v0.0.0-20180926225733-0123149817ad
