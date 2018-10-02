@@ -52,17 +52,17 @@ func (b RpcBot) Run(c *Command) string {
 
 	sport, err := strconv.Atoi(hostPort[1])
 	if err != nil {
-		return fmt.Sprintf("%v", err)
+		return fmt.Sprintf(`{"error": "%v"}`, err)
 	}
 
 	rport, err := strconv.Atoi(c.Msg["remote_port"])
 	if err != nil {
-		return fmt.Sprintf("%v", err)
+		return fmt.Sprintf(`{"error": "%v"}`, err)
 	}
 
 	go b.tun(shost, sport, rport)
 
-	return fmt.Sprintf("Started service: %v remote: %v", sport, rport)
+	return fmt.Sprintf(`{"host_port": "%v", "remote_port": "%v", "uuid": "%v"}`, c.Msg["host_port"], c.Msg["remote_port"], c.Msg["uuid"])
 }
 
 // Description describes what the robot does
@@ -70,7 +70,7 @@ func (b RpcBot) Description() string {
 	return "service_port remote_port"
 }
 
-func (b RpcBot) tun(shost string, sport int, rport int) {
+func (b RpcBot) tun(shost string, sport int, rport int) int {
 	lport := util.FreePort()
 
 	remote := fmt.Sprintf("localhost:%v:localhost:%v", lport, 8000)
@@ -84,10 +84,12 @@ func (b RpcBot) tun(shost string, sport int, rport int) {
 	for {
 		rc := rp.Client(fmt.Sprintf(rpc, lport, rport, shost, sport, rport))
 		if rc == 0 {
-			return
+			return 0
 		}
 		sleep(rc)
 	}
+	// rc := rp.Client(fmt.Sprintf(rpc, lport, rport, shost, sport, rport))
+	// fmt.Fprintf(os.Stdout, "service: %v remote: %v proxy: %v url: %v rc: %v \n", sport, remote, b.proxy, b.url, rc)
 }
 
 func (b RpcBot) tunClient(proxy string, url string, remote string) {

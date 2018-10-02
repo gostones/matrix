@@ -11,8 +11,10 @@ import (
 	"github.com/gostones/matrix/ssh"
 	"github.com/gostones/matrix/tunnel"
 	"github.com/gostones/matrix/util"
+	"math/rand"
 	"os"
 	"strconv"
+	"time"
 )
 
 //
@@ -222,7 +224,8 @@ func linkService(args []string) {
 		usage()
 	}
 
-	rpPort := 11022
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rpPort := 10000 + rnd.Intn(9999)
 
 	cfg := link.Config{
 		Host:  "localhost",
@@ -241,8 +244,8 @@ func linkService(args []string) {
 	//
 	fmt.Fprintf(os.Stdout, "link local: %v user: %v\n", lport, user)
 
-	//service link
-	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", *fromPort, rpPort))
+	//rpc service
+	go tunnel.TunClient(cfg.Proxy, cfg.URL, fmt.Sprintf("localhost:%v:localhost:%v", *fromPort, rpPort))
 
 	//chat
 	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
@@ -251,7 +254,7 @@ func linkService(args []string) {
 
 	// for {
 	// 	rc := link.Serve(&cfg)
-		
+
 	// 	sleep(rc)
 	// }
 

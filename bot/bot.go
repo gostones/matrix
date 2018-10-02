@@ -145,16 +145,16 @@ func Bot(c *Config) error {
 				defer func() string {
 					if r := recover(); r != nil {
 						fmt.Println("Recovered in f", r)
-						return fmt.Sprintf("%v", r)
+						return fmt.Sprintf(`{"error": "%v"}`, r)
 					}
-					return "ok"
+					return `{"error": "unknown"}`
 				}()
 				return robot.Run(cmd)
 			}
 
-			if response := execute(); response != "" {
+			if resp := execute(); resp != "" {
 				//TODO check from
-				send(in, fmt.Sprintf(`/msg %v %s`, cm.From, response))
+				send(in, fmt.Sprintf(`/msg %v %v`, cm.From, resp))
 			}
 		}
 

@@ -94,7 +94,48 @@ func Bot(c *Config) error {
 		return err
 	}
 
-	delay := 5 * time.Second
+	var delay = 5 * time.Second
+
+	var rpcCount = 0
+	var rpcUser = ""
+
+	var doneChan = make(chan bool, 1)
+	var tickChan = time.NewTicker(time.Second * 10).C
+	var timeChan = time.NewTimer(time.Second * 300).C
+
+	rpc := func() {
+
+		rpcMsg := fmt.Sprintf(`/msg %v {"cmd":"rpc", "host_port":"%v", "remote_port":"%v", "uuid":"%v"}`, c.Service.Name, c.Service.HostPort, c.Service.Port, c.UUID)
+
+		fmt.Printf("rpc: %v count: %v\n", rpcMsg, rpcCount)
+
+		// for {
+		// 	_, err := send(in, rpcMsg)
+
+		// 	if err == nil {
+		// 		break
+		// 	}
+
+		// 	time.Sleep(delay)
+		// }
+
+		for {
+			select {
+			case <-timeChan:
+				fmt.Println("Timer expired")
+				panic("Timedout")
+			case <-tickChan:
+				fmt.Println("Ticker ticked")
+				_, err := send(in, rpcMsg)
+				rpcCount++
+				fmt.Printf("error: %v count: %v\n", err, rpcCount)
+			case <-doneChan:
+				fmt.Println("Done!")
+				fmt.Printf("rpc:  %v count: %v\n", rpcMsg, rpcCount)
+				return
+			}
+		}
+	}
 
 	go func() {
 		me := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
@@ -111,6 +152,9 @@ func Bot(c *Config) error {
 		}
 
 		active = true
+
+		//
+		rpc()
 	}()
 
 	//
@@ -132,27 +176,25 @@ func Bot(c *Config) error {
 				continue
 			}
 
-			// monitor presence
-			if cm.Msg == nil || cm.Type != "presence" {
-			 	continue
+			//
+			if cm.Msg == nil {
+				continue
 			}
 
-			go func() {
-				rpc := fmt.Sprintf(`/msg %v {"cmd":"rpc", "host_port":"%v", "remote_port":"%v"}`, c.Service.Name, c.Service.HostPort, c.Service.Port)
-				fmt.Printf("establishing rpc: %v\n", rpc)
+			if cm.Type == "pm" && cm.Msg["error"] == "" && cm.Msg["uuid"] == c.UUID {
+				rpcUser = cm.From
+				doneChan <- true
+				fmt.Printf("rpc reply from: %v\r\n", rpcUser)
+			}
 
-				for {
-					_, err := send(in, rpc)
+			if cm.Type == "presence" && cm.Msg["who"] == rpcUser {
+				fmt.Printf("rpc presence who: %v status: %v\r\n", rpcUser, cm.Msg["status"])
 
-					if err == nil {
-						break
-					}
-
-					time.Sleep(delay)
+				if cm.Msg["status"] == "left" {
+					rpcUser = ""
+					rpc()
 				}
-				fmt.Printf("rpc established: %v\n", rpc)
-
-			}()
+			}
 
 			//
 			// if cm.Msg == nil || cm.Msg["cmd"] == "" {
