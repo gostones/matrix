@@ -56,6 +56,8 @@ github.com/gostones/ssh-chat v0.0.0-20180926194309-dee65720ce14 h1:F25H9W+lv7kFN
 github.com/gostones/ssh-chat v0.0.0-20180926194309-dee65720ce14/go.mod h1:OTA9LTkGGdW7BoNhvXUI1QATpCABjMMW+pUg0KuKifs=
 github.com/gostones/ssh-chat v0.0.0-20180926225733-0123149817ad h1:Zu741tLsIyyZPumZTHUoKOxkcKUxr9xCIGlQET+ueTQ=
 github.com/gostones/ssh-chat v0.0.0-20180926225733-0123149817ad/go.mod h1:OTA9LTkGGdW7BoNhvXUI1QATpCABjMMW+pUg0KuKifs=
+github.com/gostones/ssh-chat v0.0.0-20181002081002-7a0c5a17cf93 h1:NgET6TIbTISShB8wwHS6kWvAHcjOB/8dwQ3mjLx/Eg8=
+github.com/gostones/ssh-chat v0.0.0-20181002081002-7a0c5a17cf93/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c h1:kQWxfPIHVLbgLzphqk3QUflDy9QdksZR4ygR807bpy0=
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
@@ -68,6 +70,8 @@ github.com/jpillora/ansi v0.0.0-20170202005112-f496b27cd669 h1:l5rH/CnVVu+HPxjtx
 github.com/jpillora/ansi v0.0.0-20170202005112-f496b27cd669/go.mod h1:kOeLNvjNBGSV3uYtFjvb72+fnZCMFJF1XDvRIjdom0g=
 github.com/jpillora/backoff v0.0.0-20170222002228-06c7a16c845d h1:ETeT81zgLgSNc4BWdDO2Fg9ekVItYErbNtE8mKD2pJA=
 github.com/jpillora/backoff v0.0.0-20170222002228-06c7a16c845d/go.mod h1:2iMrUgbbvHEiQClaW2NsSzMyGHqN+rDFqY705q49KG0=
+github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7 h1:K//n/AqR5HjG3qxbrBCL4vJPW0MVFSs9CPK1OOJdRME=
+github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7/go.mod h1:2iMrUgbbvHEiQClaW2NsSzMyGHqN+rDFqY705q49KG0=
 github.com/jpillora/chisel v0.0.0-20171123140225-12fec693f1ca h1:cRGWNuIG5CnvWTfV8AEHrbaPVNrl4Bld8jkd08ZTJms=
 github.com/jpillora/chisel v0.0.0-20171123140225-12fec693f1ca/go.mod h1:aRsycmIyMtKzN6Z5yuqMP4OdNsZaa3axuxwR1CqeJTU=
 github.com/jpillora/requestlog v0.0.0-20160929164104-86703d0d0f95 h1:XaKfnwVP8IbsxA9IUpTtGLiYytkBbgBn/LwyWv5Vsgg=

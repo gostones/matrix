@@ -20,12 +20,12 @@ require (
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/mux v1.6.2
 	github.com/gorilla/websocket v0.0.0-20170718202341-a69d9f6de432
-	github.com/gostones/ssh-chat v0.0.0-20180926225733-0123149817ad
+	github.com/gostones/ssh-chat v0.0.0-20181002081002-7a0c5a17cf93
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/jessevdk/go-flags v1.3.0
 	github.com/jpillora/ansi v0.0.0-20170202005112-f496b27cd669
-	github.com/jpillora/backoff v0.0.0-20170222002228-06c7a16c845d
+	github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7
 	github.com/jpillora/chisel v0.0.0-20171123140225-12fec693f1ca
 	github.com/jpillora/requestlog v0.0.0-20160929164104-86703d0d0f95
 	github.com/jpillora/sizestr v0.0.0-20160130011556-e2ea2fa42fb9

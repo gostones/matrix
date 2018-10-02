@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gostones/matrix/util"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
@@ -107,28 +108,28 @@ func Bot(c *Config) error {
 				continue
 			}
 
-			//
-			if cm.Type == "me" && cm.Msg["name"] == c.User && cm.Msg["uuid"] == c.UUID {
+			// //
+			// if cm.Type == "me" && cm.Msg["name"] == c.User && cm.Msg["uuid"] == c.UUID {
 
-				go func() {
-					link := fmt.Sprintf(`/link %v:%v {"remote":"%v", "local":"%v"}`, cm.From, c.To, c.Remote, c.Local)
-					fmt.Printf("establishing link: %v\n", link)
+			// 	go func() {
+			// 		link := fmt.Sprintf(`/link %v:%v {"remote":"%v", "local":"%v"}`, cm.From, c.To, c.Remote, c.Local)
+			// 		fmt.Printf("establishing link: %v\n", link)
 
-					for {
-						_, err := send(in, link)
+			// 		for {
+			// 			_, err := send(in, link)
 
-						if err == nil {
-							break
-						}
+			// 			if err == nil {
+			// 				break
+			// 			}
 
-						time.Sleep(delay)
-					}
-					fmt.Printf("link established: %v\n", link)
+			// 			time.Sleep(delay)
+			// 		}
+			// 		fmt.Printf("link established: %v\n", link)
 
-				}()
+			// 	}()
 
-				continue
-			}
+			// 	continue
+			// }
 
 			//
 			if cmd.Msg == nil || cmd.Msg["cmd"] == "" {
@@ -225,7 +226,7 @@ func send(in io.WriteCloser, s string) (int, error) {
 }
 
 func dial(addr, user string) (*ssh.Client, error) {
-	key, err := MakeKey()
+	key, err := util.MakeKey()
 	if err != nil {
 		return nil, err
 	}

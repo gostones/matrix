@@ -31,11 +31,6 @@ type Config struct {
 	URL  string
 	UUID string
 	User string
-
-	//target service
-	To     string
-	Remote string //remote service host:port
-	Local  string //local :port
 }
 
 // Server starts bot

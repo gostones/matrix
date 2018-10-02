@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gostones/matrix/bot"
 	"github.com/gostones/matrix/chat"
+	"github.com/gostones/matrix/link"
 	"github.com/gostones/matrix/rp"
 	"github.com/gostones/matrix/ssh"
 	"github.com/gostones/matrix/tunnel"
@@ -21,6 +22,7 @@ var help = `
 	Commands:
 		server - server mode
 		bot    - service worker
+		link   - link service
 		cli    - control agent
 `
 
@@ -45,7 +47,9 @@ func main() {
 	case "server":
 		server(args)
 	case "bot":
-		botServer(args)
+		botService(args)
+	case "link":
+		linkService(args)
 	case "cli":
 		client(args)
 	default:
@@ -119,6 +123,10 @@ func client(args []string) {
 	proxy := flags.String("proxy", "", "")
 	user := flags.String("name", fmt.Sprintf("cli%v", lport), "")
 
+	// to := flags.String("to", "", "target servcie name")
+	// remote := flags.String("remote", "", "host:port")
+	// local := flags.String("local", "", ":port")
+
 	flags.Parse(args)
 
 	if *url == "" {
@@ -152,7 +160,7 @@ func client(args []string) {
 	}
 }
 
-func botServer(args []string) {
+func botService(args []string) {
 	flags := flag.NewFlagSet("bot", flag.ContinueOnError)
 
 	lport := util.FreePort()
@@ -162,10 +170,6 @@ func botServer(args []string) {
 	proxy := flags.String("proxy", "", "")
 	user := flags.String("name", fmt.Sprintf("bot%v", lport), "")
 
-	to := flags.String("to", "", "target servcie name")
-	remote := flags.String("remote", "", "host:port")
-	local := flags.String("local", "", ":port")
-
 	flags.Parse(args)
 
 	if *url == "" {
@@ -173,15 +177,12 @@ func botServer(args []string) {
 	}
 
 	cfg := bot.Config{
-		Host:   "localhost",
-		Port:   lport,
-		Proxy:  *proxy,
-		URL:    *url,
-		UUID:   uuid.New().String(),
-		User:   *user,
-		To:     *to,
-		Remote: *remote,
-		Local:  *local,
+		Host:  "localhost",
+		Port:  lport,
+		Proxy: *proxy,
+		URL:   *url,
+		UUID:  uuid.New().String(),
+		User:  *user,
 	}
 	//
 	fmt.Fprintf(os.Stdout, "local: %v user: %v\n", lport, user)
@@ -195,6 +196,66 @@ func botServer(args []string) {
 		rc := bot.Server(&cfg)
 		sleep(rc)
 	}
+}
+
+func linkService(args []string) {
+	flags := flag.NewFlagSet("link", flag.ContinueOnError)
+
+	lport := util.FreePort()
+
+	port := flags.Int("port", parseInt(os.Getenv("MATRIX_PORT"), 2022), "")
+	url := flags.String("url", os.Getenv("MATRIX_URL"), "")
+	proxy := flags.String("proxy", "", "")
+	user := flags.String("name", fmt.Sprintf("link%v", lport), "")
+
+	toName := flags.String("link-name", "", "remote service name")
+	toHostPort := flags.String("link-hostport", "", "remote service host:port")
+	fromPort := flags.Int("link-port", util.FreePort(), "")
+
+	flags.Parse(args)
+
+	if *url == "" {
+		usage()
+	}
+
+	if *toName == "" || *toHostPort == "" {
+		usage()
+	}
+
+	rpPort := 11022
+
+	cfg := link.Config{
+		Host:  "localhost",
+		Port:  lport,
+		Proxy: *proxy,
+		URL:   *url,
+		UUID:  uuid.New().String(),
+		User:  *user,
+
+		Service: &link.Service{
+			Name:     *toName,
+			HostPort: *toHostPort,
+			Port:     rpPort,
+		},
+	}
+	//
+	fmt.Fprintf(os.Stdout, "link local: %v user: %v\n", lport, user)
+
+	//service link
+	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", *fromPort, rpPort))
+
+	//chat
+	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
+
+	// sleep := util.BackoffDuration()
+
+	// for {
+	// 	rc := link.Serve(&cfg)
+		
+	// 	sleep(rc)
+	// }
+
+	link.Serve(&cfg)
 }
 
 func parseInt(s string, v int) int {
