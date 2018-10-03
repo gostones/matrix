@@ -9,18 +9,22 @@ import (
 	"time"
 )
 
-func BackoffDuration() func(int) {
+func BackoffDuration() func(error) {
 	b := &backoff.Backoff{
 		Min:    100 * time.Millisecond,
-		Max:    60 * time.Second,
-		Factor: 2,
+		Max:    30 * time.Second,
+		Factor: 3,
 		Jitter: false,
 	}
 
-	return func(rc int) {
+	return func(rc error) {
 		secs := b.Duration()
+
 		fmt.Fprintf(os.Stdout, "rc: %v sleeping %v\n", rc, secs)
 		time.Sleep(secs)
+		if secs.Nanoseconds() >= b.Max.Nanoseconds() {
+			b.Reset()
+		}
 	}
 }
 

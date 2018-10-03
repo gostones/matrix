@@ -5,63 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gostones/matrix/util"
 	"golang.org/x/crypto/ssh"
-	"io"
-	"net"
 	"os"
+	"strings"
 	"time"
 )
 
-// Service
-type Service struct {
-	Name     string
-	HostPort string
-	Port     int
-}
+// Connect to remote service
+func Connect(c *Config) error {
+	var active = false
 
-// Config
-type Config struct {
-	Host  string
-	Port  int
-	Proxy string
+	fmt.Fprintf(os.Stdout, "Connect proxy: %v server: %v\n", c.Proxy, c.URL)
 
-	URL  string
-	UUID string
-	User string
-
-	Service *Service
-}
-
-// Serve
-func Serve(c *Config) int {
-	// ProxyUrl = c.Proxy
-	// MatrixUrl = c.URL
-
-	fmt.Fprintf(os.Stdout, "Bot proxy: %v server: %v\n", c.Proxy, c.URL)
-
-	if err := Bot(c); err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return 1
-	}
-
-	return 0
-}
-
-// ChatMessage format
-type ChatMessage struct {
-	Type string            `json:"type"`
-	To   string            `json:"to"`
-	From string            `json:"from"`
-	Msg  map[string]string `json:"msg"`
-}
-
-var active = false
-
-const maxInputLength int = 1024
-
-// Bot runs the bot
-func Bot(c *Config) error {
 	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
 
 	conn, err := dial(addr, c.User)
@@ -96,28 +51,19 @@ func Bot(c *Config) error {
 
 	var delay = 5 * time.Second
 
-	var rpcCount = 0
-	var rpcUser = ""
+	var count = 0
+	var remotePort = -1
+	var svcUser = ""
 
 	var doneChan = make(chan bool, 1)
 	var tickChan = time.NewTicker(time.Second * 10).C
 	var timeChan = time.NewTimer(time.Second * 300).C
 
-	rpc := func() {
+	whois := func() {
 
-		rpcMsg := fmt.Sprintf(`/msg %v {"cmd":"rpc", "host_port":"%v", "remote_port":"%v", "uuid":"%v"}`, c.Service.Name, c.Service.HostPort, c.Service.Port, c.UUID)
+		whoisMsg := fmt.Sprintf(`/whois %v`, c.Service.Name)
 
-		fmt.Printf("rpc: %v count: %v\n", rpcMsg, rpcCount)
-
-		// for {
-		// 	_, err := send(in, rpcMsg)
-
-		// 	if err == nil {
-		// 		break
-		// 	}
-
-		// 	time.Sleep(delay)
-		// }
+		fmt.Printf("whois: %v count: %v\n", whoisMsg, count)
 
 		for {
 			select {
@@ -126,12 +72,12 @@ func Bot(c *Config) error {
 				panic("Timedout")
 			case <-tickChan:
 				fmt.Println("Ticker ticked")
-				_, err := send(in, rpcMsg)
-				rpcCount++
-				fmt.Printf("error: %v count: %v\n", err, rpcCount)
+				_, err := send(in, whoisMsg)
+				count++
+				fmt.Printf("error: %v count: %v\n", err, count)
 			case <-doneChan:
 				fmt.Println("Done!")
-				fmt.Printf("rpc:  %v count: %v\n", rpcMsg, rpcCount)
+				fmt.Printf("whois: %v count: %v\n", whoisMsg, count)
 				return
 			}
 		}
@@ -154,7 +100,7 @@ func Bot(c *Config) error {
 		active = true
 
 		//
-		rpc()
+		whois()
 	}()
 
 	//
@@ -181,18 +127,21 @@ func Bot(c *Config) error {
 				continue
 			}
 
-			if cm.Type == "pm" && cm.Msg["error"] == "" && cm.Msg["uuid"] == c.UUID {
-				rpcUser = cm.From
+			if cm.Type == "system" && cm.Msg["error"] == "" && cm.Msg["user_type"] == "service" && strings.HasPrefix(cm.Msg["name"], strings.Split(c.Service.Name, "/")[0]+"/") {
+
+				remotePort = parseInt(cm.Msg["remote_port"], -1)
+				svcUser = cm.Msg["name"]
+
 				doneChan <- true
-				fmt.Printf("rpc reply from: %v\r\n", rpcUser)
+				fmt.Printf("whois response: %v\n", cm.Msg)
+				go tun(c, remotePort)
 			}
 
-			if cm.Type == "presence" && cm.Msg["who"] == rpcUser {
-				fmt.Printf("rpc presence who: %v status: %v\r\n", rpcUser, cm.Msg["status"])
+			if cm.Type == "presence" && cm.Msg["who"] == svcUser {
+				fmt.Printf("service user presence who: %v status: %v\r\n", svcUser, cm.Msg["status"])
 
 				if cm.Msg["status"] == "left" {
-					rpcUser = ""
-					rpc()
+					whois()
 				}
 			}
 
@@ -221,25 +170,4 @@ func Bot(c *Config) error {
 	}
 
 	return errors.New("ERROR")
-}
-
-func send(in io.WriteCloser, s string) (int, error) {
-	return in.Write([]byte(s + "\r\n"))
-}
-
-func dial(addr, user string) (*ssh.Client, error) {
-	key, err := util.MakeKey()
-	if err != nil {
-		return nil, err
-	}
-
-	return ssh.Dial("tcp", addr, &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(key),
-		},
-		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-			return nil
-		},
-	})
 }

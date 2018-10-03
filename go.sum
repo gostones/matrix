@@ -10,6 +10,8 @@ github.com/apex/log v0.0.0-20180118050619-ff0f66940b82/go.mod h1:yA770aXIDQrhVOI
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
 github.com/codegangsta/cli v0.0.0-20180226030253-8e01ec4cd3e2/go.mod h1:/qJNoX69yVSKu5o4jLyXAENLRyk1uhi7zkbQ3slBdOA=
+github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
+github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/docker/distribution v2.6.2+incompatible h1:4FI6af79dfCS/CYb+RRtkSHw3q1L/bnDjG1PcPZtQhM=
 github.com/docker/distribution v2.6.2+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
 github.com/docker/docker v1.13.1 h1:5VBhsO6ckUxB0A8CE5LlUJdXzik9cbEbBTQ/ggeml7M=
@@ -60,6 +62,12 @@ github.com/gostones/ssh-chat v0.0.0-20181002081002-7a0c5a17cf93 h1:NgET6TIbTISSh
 github.com/gostones/ssh-chat v0.0.0-20181002081002-7a0c5a17cf93/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
 github.com/gostones/ssh-chat v0.0.0-20181002233601-52c442214a2b h1:5uITITQLyVi6CZs6RM+S1lPvMaQ8ksyyW0Yl22KOh4M=
 github.com/gostones/ssh-chat v0.0.0-20181002233601-52c442214a2b/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
+github.com/gostones/ssh-chat v0.0.0-20181003175249-b66768c26906 h1:BWsy48DChdGwZvzsYdl/gX0incrpKMeTEQW601qkKQU=
+github.com/gostones/ssh-chat v0.0.0-20181003175249-b66768c26906/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
+github.com/gostones/ssh-chat v0.0.0-20181003191852-b15160069d71 h1:e0bX0DnTH7k1/WaEDsikNoRidGC8TaQ+IPs+I4486oY=
+github.com/gostones/ssh-chat v0.0.0-20181003191852-b15160069d71/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
+github.com/gostones/ssh-chat v0.0.0-20181003210403-9e988951a23a h1:od5iOmRIlteazK6FZKAt+JsCVa+XumvcWt6kPfA/lRg=
+github.com/gostones/ssh-chat v0.0.0-20181003210403-9e988951a23a/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c h1:kQWxfPIHVLbgLzphqk3QUflDy9QdksZR4ygR807bpy0=
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=
@@ -101,6 +109,8 @@ github.com/pelletier/go-buffruneio v0.2.0 h1:U4t4R6YkofJ5xHm3dJzuRpPZ0mr5MMCoAWo
 github.com/pelletier/go-buffruneio v0.2.0/go.mod h1:JkE26KsDizTr40EUHkXVtNPvgGtbSNq5BcowyYOWdKo=
 github.com/pkg/errors v0.0.0-20180311214515-816c9085562c h1:F5RoIh7F9wB47PvXvpP1+Ihq1TkyC8iRdvwfKkESEZQ=
 github.com/pkg/errors v0.0.0-20180311214515-816c9085562c/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
+github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rakyll/statik v0.0.0-20180330204314-fcdcb7b85139 h1:8owEqJayVxrfiBTllEcxPNLn9UzjX9NAX+9tTtflE94=
 github.com/rakyll/statik v0.0.0-20180330204314-fcdcb7b85139/go.mod h1:OEi9wJV/fMUAGx1eNjq75DKDsJVuEv1U0oYdX6GX8Zs=
 github.com/rakyll/statik v0.1.5 h1:Ly2UjURzxnsSYS0zI50fZ+srA+Fu7EbpV5hglvJvJG0=
@@ -114,6 +124,8 @@ github.com/shirou/gopsutil v0.0.0-20180406082613-cd915bdc3158/go.mod h1:5b4v6he4
 github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4/go.mod h1:qsXQc7+bwAM3Q1u/4XEfrquwF8Lw7D7y5cD8CuHnfIc=
 github.com/src-d/gcfg v1.3.0 h1:2BEDr8r0I0b8h/fOqwtxCEiq2HJu8n2JGZJQFGXWLjg=
 github.com/src-d/gcfg v1.3.0/go.mod h1:p/UMsR43ujA89BJY9duynAwIpvqEujIH/jFlfL7jWoI=
+github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
+github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/templexxx/cpufeat v0.0.0-20170927014610-3794dfbfb047 h1:K+jtWCOuZgCra7eXZ/VWn2FbJmrA/D058mTXhh2rq+8=
 github.com/templexxx/cpufeat v0.0.0-20170927014610-3794dfbfb047/go.mod h1:wM7WEvslTq+iOEAMDLSzhVuOt5BRZ05WirO+b09GHQU=
 github.com/templexxx/reedsolomon v0.0.0-20170927015403-7092926d7d05 h1:XBQHunCjhIJuZ3IVhJA1BrnO6lqFGrPifDPXS5Ep6Ts=

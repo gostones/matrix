@@ -83,7 +83,7 @@ func (b RpcBot) tun(shost string, sport int, rport int) int {
 
 	for {
 		rc := rp.Client(fmt.Sprintf(rpc, lport, rport, shost, sport, rport))
-		if rc == 0 {
+		if rc == nil {
 			return 0
 		}
 		sleep(rc)

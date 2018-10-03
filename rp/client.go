@@ -55,7 +55,7 @@ import (
 //    -v --version                show version
 //`
 
-func Client(opt string) int {
+func Client(opt string) error {
 	var err error
 	//confFile := "./frpc.ini"
 	// the configures parsed from file will be replaced by those from command line if exist
@@ -70,13 +70,13 @@ func Client(opt string) int {
 	conf, err := ini.Load(in)
 	if err != nil {
 		fmt.Println(err)
-		return 1
+		return err
 	}
 
 	config.ClientCommonCfg, err = config.LoadClientCommonConf(conf)
 	if err != nil {
 		fmt.Println(err)
-		return 1
+		return err
 	}
 	config.ClientCommonCfg.ConfigFile = ""
 	config.ClientCommonCfg.TcpMux = true
@@ -145,7 +145,7 @@ func Client(opt string) int {
 	pxyCfgs, visitorCfgs, err := config.LoadProxyConfFromFile(config.ClientCommonCfg.User, conf, config.ClientCommonCfg.Start)
 	if err != nil {
 		fmt.Println(err)
-		return 1
+		return err
 	}
 
 	log.InitLog(config.ClientCommonCfg.LogWay, config.ClientCommonCfg.LogFile,
@@ -161,10 +161,10 @@ func Client(opt string) int {
 	err = svr.Run()
 	if err != nil {
 		fmt.Println(err)
-		return 1
+		return err
 	}
 
-	return 0
+	return nil
 }
 
 func HandleSignal(svr *client.Service) {

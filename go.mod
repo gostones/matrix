@@ -9,6 +9,7 @@ require (
 	github.com/apex/log v0.0.0-20180118050619-ff0f66940b82
 	github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5
 	github.com/codegangsta/cli v0.0.0-20180226030253-8e01ec4cd3e2
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emirpasic/gods v1.9.0
 	github.com/fatedier/beego v1.7.2
 	github.com/fatedier/frp v0.16.1
@@ -20,7 +21,7 @@ require (
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/mux v1.6.2
 	github.com/gorilla/websocket v0.0.0-20170718202341-a69d9f6de432
-	github.com/gostones/ssh-chat v0.0.0-20181002233601-52c442214a2b
+	github.com/gostones/ssh-chat v0.0.0-20181003210403-9e988951a23a
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/jessevdk/go-flags v1.3.0
@@ -41,12 +42,14 @@ require (
 	github.com/parnurzeal/gorequest v0.0.0-20171015110455-8e3aed27fe49
 	github.com/pelletier/go-buffruneio v0.2.0
 	github.com/pkg/errors v0.0.0-20180311214515-816c9085562c
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rakyll/statik v0.1.5
 	github.com/sergi/go-diff v1.0.0
 	github.com/shazow/rateio v0.0.0-20150116013248-e8e00881e5c1
 	github.com/shirou/gopsutil v0.0.0-20180406082613-cd915bdc3158
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
 	github.com/src-d/gcfg v1.3.0
+	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/templexxx/cpufeat v0.0.0-20170927014610-3794dfbfb047
 	github.com/templexxx/reedsolomon v0.0.0-20170927015403-7092926d7d05
 	github.com/templexxx/xor v0.0.0-20170926022130-0af8e873c554

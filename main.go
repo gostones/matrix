@@ -11,10 +11,8 @@ import (
 	"github.com/gostones/matrix/ssh"
 	"github.com/gostones/matrix/tunnel"
 	"github.com/gostones/matrix/util"
-	"math/rand"
 	"os"
 	"strconv"
-	"time"
 )
 
 //
@@ -22,10 +20,11 @@ var help = `
 	Usage: matrix [command] [--help]
 
 	Commands:
-		server - server mode
-		bot    - service worker
-		link   - link service
-		cli    - control agent
+		server    - server mode
+		bot       - service worker
+		cli       - control agent
+		service   - link service
+		connect   - connect to service
 `
 
 //
@@ -50,10 +49,12 @@ func main() {
 		server(args)
 	case "bot":
 		botService(args)
-	case "link":
-		linkService(args)
 	case "cli":
 		client(args)
+	case "service":
+		linkService(args)
+	case "connect":
+		linkConnect(args)
 	default:
 		usage()
 	}
@@ -68,11 +69,12 @@ func usage() {
 //	return fmt.Sprintf("u_%v_%v", strings.Replace(util.MacAddr(), ":", "", -1), rand)
 //}
 
-var rps = `
+const rps = `
 [common]
 bind_port = %v
 `
-var matrixPort = 2022
+const matrixPort = 2022
+const rpsPort = 8000
 
 func server(args []string) {
 	flags := flag.NewFlagSet("server", flag.ContinueOnError)
@@ -86,7 +88,7 @@ func server(args []string) {
 
 	v := flags.Bool("verbose", false, "")
 
-	rport := flags.Int("rps", 8000, "")
+	rport := flags.Int("rps", rpsPort, "")
 	sport := flags.Int("ssh", 8022, "")
 
 	flags.Parse(args)
@@ -158,7 +160,7 @@ func client(args []string) {
 		if rc == 0 {
 			os.Exit(0)
 		}
-		sleep(rc)
+		sleep(fmt.Errorf("error: %d", rc))
 	}
 }
 
@@ -196,23 +198,22 @@ func botService(args []string) {
 
 	for {
 		rc := bot.Server(&cfg)
-		sleep(rc)
+		sleep(fmt.Errorf("error: %d", rc))
 	}
 }
 
-func linkService(args []string) {
-	flags := flag.NewFlagSet("link", flag.ContinueOnError)
+func linkConnect(args []string) {
+	flags := flag.NewFlagSet("connect", flag.ContinueOnError)
 
 	lport := util.FreePort()
 
 	port := flags.Int("port", parseInt(os.Getenv("MATRIX_PORT"), 2022), "")
 	url := flags.String("url", os.Getenv("MATRIX_URL"), "")
 	proxy := flags.String("proxy", "", "")
-	user := flags.String("name", fmt.Sprintf("link%v", lport), "")
+	user := flags.String("name", fmt.Sprintf("connect%v", lport), "")
 
-	toName := flags.String("link-name", "", "remote service name")
-	toHostPort := flags.String("link-hostport", "", "remote service host:port")
-	fromPort := flags.Int("link-port", util.FreePort(), "")
+	toName := flags.String("service", "", "remote service name")
+	listenPort := flags.Int("listen", util.FreePort(), "local port for exposing remote service")
 
 	flags.Parse(args)
 
@@ -220,12 +221,9 @@ func linkService(args []string) {
 		usage()
 	}
 
-	if *toName == "" || *toHostPort == "" {
+	if *toName == "" {
 		usage()
 	}
-
-	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rpPort := 10000 + rnd.Intn(9999)
 
 	cfg := link.Config{
 		Host:  "localhost",
@@ -236,16 +234,12 @@ func linkService(args []string) {
 		User:  *user,
 
 		Service: &link.Service{
-			Name:     *toName,
-			HostPort: *toHostPort,
-			Port:     rpPort,
+			Name: *toName,
+			Port: *listenPort,
 		},
 	}
 	//
-	fmt.Fprintf(os.Stdout, "link local: %v user: %v\n", lport, user)
-
-	//rpc service
-	go tunnel.TunClient(cfg.Proxy, cfg.URL, fmt.Sprintf("localhost:%v:localhost:%v", *fromPort, rpPort))
+	fmt.Fprintf(os.Stdout, "link service: %v user: %v\n", cfg, user)
 
 	//chat
 	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
@@ -258,7 +252,77 @@ func linkService(args []string) {
 	// 	sleep(rc)
 	// }
 
-	link.Serve(&cfg)
+	link.Connect(&cfg)
+
+	fmt.Println("Failed to connect")
+}
+
+func linkService(args []string) {
+	flags := flag.NewFlagSet("service", flag.ContinueOnError)
+
+	port := flags.Int("port", parseInt(os.Getenv("MATRIX_PORT"), 2022), "")
+	url := flags.String("url", os.Getenv("MATRIX_URL"), "")
+
+	proxy := flags.String("proxy", "", "")
+	user := flags.String("name", "", "")
+
+	toHostPort := flags.String("hostport", "", "reverse proxy service host:port")
+
+	flags.Parse(args)
+
+	if *url == "" {
+		usage()
+	}
+
+	if *toHostPort == "" {
+		usage()
+	}
+
+	for {
+		lport := util.FreePort()
+		if *user == "" {
+			*user = fmt.Sprintf("svc%v", lport)
+		}
+
+		cfg := &link.Config{
+			Host:  "localhost",
+			Port:  lport,
+			Proxy: *proxy,
+			URL:   *url,
+			MPort: *port,
+			UUID:  uuid.New().String(),
+			User:  *user,
+
+			Service: &link.Service{
+				HostPort: *toHostPort,
+				Port:     rpsPort,
+			},
+		}
+
+		//
+		startLinkService(cfg)
+	}
+}
+
+func startLinkService(cfg *link.Config) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+
+	fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
+
+	//chat
+	go tunnel.TunClient(cfg.Proxy, cfg.URL, fmt.Sprintf("localhost:%v:localhost:%v", cfg.Port, cfg.MPort))
+
+	sleep := util.BackoffDuration()
+
+	for {
+		rc := link.Serve(cfg)
+
+		sleep(rc)
+	}
 }
 
 func parseInt(s string, v int) int {
