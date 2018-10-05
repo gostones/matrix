@@ -51,13 +51,23 @@ func Serve(c *Config) error {
 	var active = false
 	var remotePort = -1
 
+	var timeout = 60
+
 	fmt.Fprintf(os.Stdout, "RP Service, proxy: %v server: %v\n", c.Proxy, c.URL)
 
 	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
 
-	conn, err := dial(addr, c.User)
+	var conn *ssh.Client
+	var err error
+
+	fn := func() error {
+		conn, err = dial(addr, c.User, timeout)
+		return err;
+	}
+
+	err = timed(timeout, fn)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	session, err := conn.NewSession()
@@ -90,10 +100,10 @@ func Serve(c *Config) error {
 	var count = 0
 
 	var doneChan = make(chan bool, 1)
-	var tickChan = time.NewTicker(time.Second * 5).C
-	var timeChan = time.NewTimer(time.Second * 120).C
+	var tickChan = time.NewTicker(5 * time.Second).C
+	var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
 
-	greet := func() {
+	greet := func(n io.WriteCloser) {
 		me := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
 		svcMsg := fmt.Sprintf(`/svc {"host_port":"%v", "uuid":"%v"}`, c.Service.HostPort, c.UUID)
 
@@ -119,7 +129,7 @@ func Serve(c *Config) error {
 				panic("Timeout")
 			case <-tickChan:
 				fmt.Println("Ticker ticked")
-				greet()
+				greet(in)
 				count++
 				fmt.Printf("error: %v count: %v\n", err, count)
 			case <-doneChan:
@@ -193,7 +203,7 @@ func send(in io.WriteCloser, s string) (int, error) {
 	return in.Write([]byte(s + "\r\n"))
 }
 
-func dial(addr, user string) (*ssh.Client, error) {
+func dial(addr, user string, timeout int) (*ssh.Client, error) {
 	key, err := util.MakeKey()
 	if err != nil {
 		return nil, err
@@ -207,6 +217,7 @@ func dial(addr, user string) (*ssh.Client, error) {
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 			return nil
 		},
+		Timeout: time.Duration(timeout) * time.Second,
 	})
 }
 
@@ -219,4 +230,23 @@ func parseInt(s string, v int) int {
 		i = v
 	}
 	return i
+}
+
+func timed(timeout int, fn func() error) error {
+	var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
+	sleep := util.BackoffDuration()
+
+	for {
+		select {
+		case <-timeChan:
+			fmt.Println("Timer expired")
+			return fmt.Errorf("Timeout: %v sec", timeout)
+		default:
+			err := fn()
+			if err == nil {
+				return nil
+			}
+			sleep(err)
+		}
+	}
 }

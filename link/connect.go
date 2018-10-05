@@ -15,11 +15,13 @@ import (
 func Connect(c *Config) error {
 	var active = false
 
+	var timeout = 60
+
 	fmt.Fprintf(os.Stdout, "Connect proxy: %v server: %v\n", c.Proxy, c.URL)
 
 	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
 
-	conn, err := dial(addr, c.User)
+	conn, err := dial(addr, c.User, timeout)
 	if err != nil {
 		return err
 	}
