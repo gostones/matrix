@@ -12,8 +12,8 @@ import (
 func BackoffDuration() func(error) {
 	b := &backoff.Backoff{
 		Min:    100 * time.Millisecond,
-		Max:    30 * time.Second,
-		Factor: 3,
+		Max:    15 * time.Second,
+		Factor: 2,
 		Jitter: false,
 	}
 
@@ -59,4 +59,46 @@ func HttpProxyEnv() string {
 		return ""
 	}
 	return p
+}
+
+//Timed runs fn per backoff in [min, max] and calls ticker at duration and boomer if timeout in milli second
+func Timed(duration int, ticker func(), timeout int, boomer func(), min, max int, fn func() error) {
+
+	tick := time.Tick(time.Duration(duration) * time.Millisecond)
+	boom := time.After(time.Duration(timeout) * time.Millisecond)
+
+	go func() {
+		b := &backoff.Backoff{
+			Min:  time.Duration(min) * time.Millisecond,
+			Max:  time.Duration(max)  * time.Millisecond,
+			Factor: 2,
+			Jitter: false,
+		}
+	
+		for {
+			if err := fn(); err != nil {
+				d := b.Duration()
+
+				time.Sleep(d)
+				if d.Nanoseconds() >= b.Max.Nanoseconds() {
+					b.Reset()
+				}
+				continue
+			}
+		}
+	}()
+	
+	for {
+		select {
+		case <-tick:
+			if ticker != nil {
+				ticker()
+			}
+		case <-boom:
+			if boomer != nil {
+				boomer()
+			}
+			return
+		}
+	}
 }
