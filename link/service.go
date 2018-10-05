@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gostones/matrix/tunnel"
 	"github.com/gostones/matrix/util"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -46,12 +47,16 @@ type ChatMessage struct {
 	Msg  map[string]string `json:"msg"`
 }
 
-// Serve
+// Serve starts reverse proxy service
 func Serve(c *Config) error {
+	//start tunnel
+	go 	tunnel.TunClient(c.Proxy, c.URL, fmt.Sprintf("localhost:%v:localhost:%v", c.Port, c.MPort))
+
+	//
 	var active = false
 	var remotePort = -1
 
-	var timeout = 60
+	var timeout = 60 * 1000 // 1 min
 
 	fmt.Fprintf(os.Stdout, "RP Service, proxy: %v server: %v\n", c.Proxy, c.URL)
 
@@ -62,13 +67,19 @@ func Serve(c *Config) error {
 
 	fn := func() error {
 		conn, err = dial(addr, c.User, timeout)
-		return err;
+		return err
 	}
 
-	err = timed(timeout, fn)
-	if err != nil {
-		panic(err)
+	boomer := func() {
+		if conn == nil {
+			panic("timeout")
+		}
 	}
+	min := 100
+	max := 3 * 1000 //3 sec
+
+	util.Timed(0, nil, timeout, boomer, min, max, fn)
+	//timed(timeout, fn)
 
 	session, err := conn.NewSession()
 	if err != nil {
@@ -97,47 +108,51 @@ func Serve(c *Config) error {
 
 	// var delay = 5 * time.Second
 
-	var count = 0
+	// var count = 0
 
-	var doneChan = make(chan bool, 1)
-	var tickChan = time.NewTicker(5 * time.Second).C
-	var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
+	// var doneChan = make(chan bool, 1)
+	// var tickChan = time.NewTicker(5 * time.Second).C
+	// var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
 
-	greet := func(n io.WriteCloser) {
-		me := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
+	greet := func() {
+		meMsg := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
 		svcMsg := fmt.Sprintf(`/svc {"host_port":"%v", "uuid":"%v"}`, c.Service.HostPort, c.UUID)
 
+		fmt.Println("Sending greetings ...")
+		fmt.Println(meMsg)
+		fmt.Println(svcMsg)
+
 		if !active {
-			_, err := send(in, me)
+			_, err := send(in, meMsg)
 			fmt.Printf("greet: %v\n", err)
 
 			if err == nil {
 				active = true
 			}
 		}
-		if active {
+		if active && remotePort == -1 {
 			_, err := send(in, svcMsg)
 			fmt.Printf("greet: %v\n", err)
 		}
 	}
 
-	svc := func() {
-		for {
-			select {
-			case <-timeChan:
-				fmt.Println("Timer expired")
-				panic("Timeout")
-			case <-tickChan:
-				fmt.Println("Ticker ticked")
-				greet(in)
-				count++
-				fmt.Printf("error: %v count: %v\n", err, count)
-			case <-doneChan:
-				fmt.Printf("Service started, count: %v\n", count)
-				return
-			}
-		}
-	}
+	// svc := func() {
+	// 	for {
+	// 		select {
+	// 		case <-timeChan:
+	// 			fmt.Println("Timer expired")
+	// 			panic("Timeout")
+	// 		case <-tickChan:
+	// 			fmt.Println("Ticker ticked")
+	// 			greet(in)
+	// 			count++
+	// 			fmt.Printf("error: %v count: %v\n", err, count)
+	// 		case <-doneChan:
+	// 			fmt.Printf("Service started, count: %v\n", count)
+	// 			return
+	// 		}
+	// 	}
+	// }
 
 	// go func() {
 	// 	me := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
@@ -153,48 +168,65 @@ func Serve(c *Config) error {
 	// 		time.Sleep(delay)
 	// 	}
 
-
 	// 	//
 	// 	svc()
 	// }()
 
-	go svc()
+	// go svc()
 
 	//
-	scanner := bufio.NewScanner(out)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		if err != nil {
-			return err
-		}
-		fmt.Println("Got: ", line)
+	handle := func() error {
+		scanner := bufio.NewScanner(out)
 
-		cm := ChatMessage{}
-		err := json.Unmarshal([]byte(line), &cm)
-		if err != nil {
-			fmt.Printf("Json error (TODO): %v\n", line)
-		} else {
-			if !active {
-				continue
+		for scanner.Scan() {
+			line := scanner.Text()
+			if err != nil {
+				return err
 			}
+			fmt.Println("Got: ", line)
 
-			//
-			if cm.Msg == nil {
-				continue
-			}
+			cm := ChatMessage{}
+			err := json.Unmarshal([]byte(line), &cm)
+			if err != nil {
+				fmt.Printf("Json error (TODO): %v\n", line)
+			} else {
+				if !active {
+					continue
+				}
 
-			if cm.Type == "system" && cm.Msg["type"] == "port" && cm.Msg["uuid"] == c.UUID {
-				if cm.Msg["error"] == "" {
-					remotePort = parseInt(cm.Msg["remote_port"], -1)
-					fmt.Printf("response remote_port: %v\n", remotePort)
-					doneChan <- true
-					tunRPC(c, remotePort)
-					panic("Failed to reverse proxy")
+				//
+				if cm.Msg == nil {
+					continue
+				}
+
+				if cm.Type == "system" && cm.Msg["type"] == "port" && cm.Msg["uuid"] == c.UUID {
+					if cm.Msg["error"] == "" {
+						remotePort = parseInt(cm.Msg["remote_port"], -1)
+						fmt.Printf("response remote_port: %v\n", remotePort)
+						
+						go func() {
+							tunRPC(c, remotePort)
+							panic("Failed to reverse proxy")
+						}()
+					}
 				}
 			}
 		}
+		return errors.New("unknown error")
 	}
+
+	//
+	greet()
+
+	util.Timed(
+		0, greet,
+		timeout, func() {
+			if !active || remotePort == -1 {
+				panic("RP not established within set timeout")
+			}
+		},
+		min, max, handle)
 
 	return errors.New("ERROR")
 }
@@ -232,21 +264,28 @@ func parseInt(s string, v int) int {
 	return i
 }
 
-func timed(timeout int, fn func() error) error {
-	var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
-	sleep := util.BackoffDuration()
+// func timed(timeout int, fn func() error) {
+// 	boomer := func() {
+// 		panic("timeout")
+// 	}
+// 	min := 100
+// 	max := 3 * 1000 //3 sec
+// 	util.Timed(0, nil, timeout, boomer, min, max, fn)
 
-	for {
-		select {
-		case <-timeChan:
-			fmt.Println("Timer expired")
-			return fmt.Errorf("Timeout: %v sec", timeout)
-		default:
-			err := fn()
-			if err == nil {
-				return nil
-			}
-			sleep(err)
-		}
-	}
-}
+// 	// var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
+// 	// sleep := util.BackoffDuration()
+
+// 	// for {
+// 	// 	select {
+// 	// 	case <-timeChan:
+// 	// 		fmt.Println("Timer expired")
+// 	// 		return fmt.Errorf("Timeout: %v sec", timeout)
+// 	// 	default:
+// 	// 		err := fn()
+// 	// 		if err == nil {
+// 	// 			return nil
+// 	// 		}
+// 	// 		sleep(err)
+// 	// 	}
+// 	// }
+// }

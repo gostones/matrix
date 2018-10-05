@@ -302,34 +302,36 @@ func linkService(args []string) {
 		}
 
 		//
-		startLinkService(cfg)
+		fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
+
+		link.Serve(cfg)
 	}
 }
 
-func startLinkService(cfg *link.Config) {
-	// defer func() {
-	// 	if r := recover(); r != nil {
-	// 		fmt.Printf("Recovered in %v\n", r)
-	// 		os.Exit(1)
-	// 	}
-	// }()
+// func startLinkService(cfg *link.Config) {
+// 	// defer func() {
+// 	// 	if r := recover(); r != nil {
+// 	// 		fmt.Printf("Recovered in %v\n", r)
+// 	// 		os.Exit(1)
+// 	// 	}
+// 	// }()
 
-	fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
+// 	fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
 
-	// //chat
+// 	// //chat
 
-	// sleep := util.BackoffDuration()
+// 	// sleep := util.BackoffDuration()
 
-	// for {
-	// 	rc := link.Serve(cfg)
+// 	// for {
+// 	// 	rc := link.Serve(cfg)
 
-	// 	sleep(rc)
-	// }
+// 	// 	sleep(rc)
+// 	// }
 
-	go 	link.Serve(cfg)
+// 	go link.Serve(cfg)
 
-	tunnel.TunClient(cfg.Proxy, cfg.URL, fmt.Sprintf("localhost:%v:localhost:%v", cfg.Port, cfg.MPort))
-}
+// 	tunnel.TunClient(cfg.Proxy, cfg.URL, fmt.Sprintf("localhost:%v:localhost:%v", cfg.Port, cfg.MPort))
+// }
 
 func parseInt(s string, v int) int {
 	if s == "" {

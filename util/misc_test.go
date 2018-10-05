@@ -45,4 +45,4 @@ func TestTimed(t *testing.T) {
 	Timed(duration, ticker, timeout, boomer, min, max, fn)
 
 	//time.Sleep(1 * time.Hour)
- }
+}

@@ -66,38 +66,60 @@ func Timed(duration int, ticker func(), timeout int, boomer func(), min, max int
 
 	tick := time.Tick(time.Duration(duration) * time.Millisecond)
 	boom := time.After(time.Duration(timeout) * time.Millisecond)
+	timeup := time.After(time.Duration(timeout) * time.Millisecond)
+
+	done := make(chan bool, 1)
 
 	go func() {
 		b := &backoff.Backoff{
-			Min:  time.Duration(min) * time.Millisecond,
-			Max:  time.Duration(max)  * time.Millisecond,
+			Min:    time.Duration(min) * time.Millisecond,
+			Max:    time.Duration(max) * time.Millisecond,
 			Factor: 2,
 			Jitter: false,
 		}
-	
-		for {
-			if err := fn(); err != nil {
-				d := b.Duration()
 
-				time.Sleep(d)
-				if d.Nanoseconds() >= b.Max.Nanoseconds() {
-					b.Reset()
-				}
-				continue
+		count := 0
+		for {
+			select {
+				case <-timeup:
+					done <- true
+					fmt.Println("Time is up ...")
+					return
+				default:
+					fmt.Println("Calling fn ...")
+					if err := fn(); err != nil {
+						count++
+						fmt.Printf("fn %d %v\n", count, err)
+
+						d := b.Duration()
+
+						time.Sleep(d)
+						if d.Nanoseconds() >= b.Max.Nanoseconds() {
+							b.Reset()
+						}
+						continue
+					}
+					done <- true
+					fmt.Println("Returning from fn ...")
+					return
 			}
 		}
 	}()
-	
+
 	for {
 		select {
 		case <-tick:
+			fmt.Println("Ticking ....")
 			if ticker != nil {
 				ticker()
 			}
 		case <-boom:
+			fmt.Println("Boom boom boom!")
 			if boomer != nil {
 				boomer()
 			}
+
+			<-done
 			return
 		}
 	}
