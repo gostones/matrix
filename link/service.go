@@ -12,6 +12,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -50,7 +51,7 @@ type ChatMessage struct {
 // Serve starts reverse proxy service
 func Serve(c *Config) error {
 	//start tunnel
-	go 	tunnel.TunClient(c.Proxy, c.URL, fmt.Sprintf("localhost:%v:localhost:%v", c.Port, c.MPort))
+	go tunnel.TunClient(c.Proxy, c.URL, fmt.Sprintf("localhost:%v:localhost:%v", c.Port, c.MPort))
 
 	//
 	var active = false
@@ -79,7 +80,6 @@ func Serve(c *Config) error {
 	max := 3 * 1000 //3 sec
 
 	util.Timed(0, nil, timeout, boomer, min, max, fn)
-	//timed(timeout, fn)
 
 	session, err := conn.NewSession()
 	if err != nil {
@@ -106,14 +106,6 @@ func Serve(c *Config) error {
 		return err
 	}
 
-	// var delay = 5 * time.Second
-
-	// var count = 0
-
-	// var doneChan = make(chan bool, 1)
-	// var tickChan = time.NewTicker(5 * time.Second).C
-	// var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
-
 	greet := func() {
 		meMsg := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
 		svcMsg := fmt.Sprintf(`/svc {"host_port":"%v", "uuid":"%v"}`, c.Service.HostPort, c.UUID)
@@ -135,46 +127,6 @@ func Serve(c *Config) error {
 			fmt.Printf("greet: %v\n", err)
 		}
 	}
-
-	// svc := func() {
-	// 	for {
-	// 		select {
-	// 		case <-timeChan:
-	// 			fmt.Println("Timer expired")
-	// 			panic("Timeout")
-	// 		case <-tickChan:
-	// 			fmt.Println("Ticker ticked")
-	// 			greet(in)
-	// 			count++
-	// 			fmt.Printf("error: %v count: %v\n", err, count)
-	// 		case <-doneChan:
-	// 			fmt.Printf("Service started, count: %v\n", count)
-	// 			return
-	// 		}
-	// 	}
-	// }
-
-	// go func() {
-	// 	me := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
-	// 	fmt.Println("Sending me detail: ", me)
-
-	// 	for {
-	// 		_, err := send(in, me)
-
-	// 		if err == nil {
-	// 			break
-	// 		}
-
-	// 		time.Sleep(delay)
-	// 	}
-
-	// 	//
-	// 	svc()
-	// }()
-
-	// go svc()
-
-	//
 
 	handle := func() error {
 		scanner := bufio.NewScanner(out)
@@ -204,7 +156,7 @@ func Serve(c *Config) error {
 					if cm.Msg["error"] == "" {
 						remotePort = parseInt(cm.Msg["remote_port"], -1)
 						fmt.Printf("response remote_port: %v\n", remotePort)
-						
+
 						go func() {
 							tunRPC(c, remotePort)
 							panic("Failed to reverse proxy")
@@ -217,16 +169,22 @@ func Serve(c *Config) error {
 	}
 
 	//
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
 	greet()
 
 	util.Timed(
 		0, greet,
 		timeout, func() {
 			if !active || remotePort == -1 {
-				panic("RP not established within set timeout")
+				//panic("RP not established within set timeout")
+				wg.Done()
 			}
 		},
 		min, max, handle)
+
+	wg.Wait()
 
 	return errors.New("ERROR")
 }
@@ -263,29 +221,3 @@ func parseInt(s string, v int) int {
 	}
 	return i
 }
-
-// func timed(timeout int, fn func() error) {
-// 	boomer := func() {
-// 		panic("timeout")
-// 	}
-// 	min := 100
-// 	max := 3 * 1000 //3 sec
-// 	util.Timed(0, nil, timeout, boomer, min, max, fn)
-
-// 	// var timeChan = time.NewTimer(time.Duration(timeout) * time.Second).C
-// 	// sleep := util.BackoffDuration()
-
-// 	// for {
-// 	// 	select {
-// 	// 	case <-timeChan:
-// 	// 		fmt.Println("Timer expired")
-// 	// 		return fmt.Errorf("Timeout: %v sec", timeout)
-// 	// 	default:
-// 	// 		err := fn()
-// 	// 		if err == nil {
-// 	// 			return nil
-// 	// 		}
-// 	// 		sleep(err)
-// 	// 	}
-// 	// }
-// }

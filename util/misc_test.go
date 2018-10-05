@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -18,31 +19,75 @@ func TestBackoffDuration(t *testing.T) {
 	}
 }
 
-func TestTimed(t *testing.T) {
-	duration := 1 * 100
-	timeout := 10 * 100
-
-	min := 100
-	max := 500
+func TestTimedBoom(t *testing.T) {
 
 	ticker := func() {
-		fmt.Println("Ticking ....")
+		fmt.Print(" . ")
 	}
 
-	boomer := func() {
-		//panic("timeout")
-		fmt.Println("Boom boom boom")
+	t.Logf("Test timeout")
+
+	Timed(
+		100, ticker,
+		1000, func() {
+			fmt.Println("Boom timeout ...")
+
+		},
+		100, 500, func() error {
+			select {}
+		})
+}
+
+func TestTimedComplete(t *testing.T) {
+
+	ticker := func() {
+		fmt.Print(" . ")
 	}
 
-	fn := func() error {
-		for i := 0; i < 2; i++ {
-			fmt.Printf("%d ", i)
-			time.Sleep(100 * time.Millisecond)
-		}
-		return fmt.Errorf("error")
+	t.Logf("Test complete")
+
+	Timed(
+		100, ticker,
+		30000, func() {
+			fmt.Println("Boom complete ...")
+		},
+		100, 500, func() error {
+			time.Sleep(500 * time.Millisecond)
+
+			fmt.Println("Return complete ...")
+			return nil
+		})
+}
+
+func TestTimedRunning(t *testing.T) {
+
+	ticker := func() {
+		fmt.Print(" . ")
 	}
 
-	Timed(duration, ticker, timeout, boomer, min, max, fn)
+	t.Logf("Test keep running")
 
-	//time.Sleep(1 * time.Hour)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	Timed(
+		100, ticker,
+		500, func() {
+			fmt.Println("Boom keep running ...")
+			//terminate
+			select {
+			case <-time.After(2 * time.Second):
+				wg.Done()
+			}
+			wg.Wait()
+		},
+		100, 500, func() error {
+		loop:
+			{
+				fmt.Print(" X ")
+				time.Sleep(1 * time.Second)
+
+			}
+			goto loop
+		})
 }

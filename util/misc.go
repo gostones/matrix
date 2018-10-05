@@ -66,7 +66,6 @@ func Timed(duration int, ticker func(), timeout int, boomer func(), min, max int
 
 	tick := time.Tick(time.Duration(duration) * time.Millisecond)
 	boom := time.After(time.Duration(timeout) * time.Millisecond)
-	timeup := time.After(time.Duration(timeout) * time.Millisecond)
 
 	done := make(chan bool, 1)
 
@@ -80,36 +79,32 @@ func Timed(duration int, ticker func(), timeout int, boomer func(), min, max int
 
 		count := 0
 		for {
-			select {
-				case <-timeup:
-					done <- true
-					fmt.Println("Time is up ...")
-					return
-				default:
-					fmt.Println("Calling fn ...")
-					if err := fn(); err != nil {
-						count++
-						fmt.Printf("fn %d %v\n", count, err)
+			fmt.Println("Calling fn ...")
+			if err := fn(); err != nil {
+				count++
+				fmt.Printf("fn %d %v\n", count, err)
 
-						d := b.Duration()
+				d := b.Duration()
 
-						time.Sleep(d)
-						if d.Nanoseconds() >= b.Max.Nanoseconds() {
-							b.Reset()
-						}
-						continue
-					}
-					done <- true
-					fmt.Println("Returning from fn ...")
-					return
+				time.Sleep(d)
+				if d.Nanoseconds() >= b.Max.Nanoseconds() {
+					b.Reset()
+				}
+				continue
 			}
+			done <- true
+			fmt.Println("Returning from fn ...")
+			return
 		}
 	}()
 
 	for {
 		select {
+		case <-done:
+			fmt.Println("Done!")
+			return
 		case <-tick:
-			fmt.Println("Ticking ....")
+			fmt.Print(" - ")
 			if ticker != nil {
 				ticker()
 			}
@@ -118,8 +113,6 @@ func Timed(duration int, ticker func(), timeout int, boomer func(), min, max int
 			if boomer != nil {
 				boomer()
 			}
-
-			<-done
 			return
 		}
 	}
