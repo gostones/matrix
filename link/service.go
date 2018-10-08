@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gostones/matrix/tunnel"
 	"github.com/gostones/matrix/util"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -50,9 +50,6 @@ type ChatMessage struct {
 
 // Serve starts reverse proxy service
 func Serve(c *Config) error {
-	//start tunnel
-	go tunnel.TunClient(c.Proxy, c.URL, fmt.Sprintf("localhost:%v:localhost:%v", c.Port, c.MPort))
-
 	//
 	var active = false
 	var remotePort = -1
@@ -133,10 +130,11 @@ func Serve(c *Config) error {
 
 		for scanner.Scan() {
 			line := scanner.Text()
-			if err != nil {
-				return err
-			}
+
 			fmt.Println("Got: ", line)
+			if strings.HasPrefix(line, "/") {
+				continue
+			}
 
 			cm := ChatMessage{}
 			err := json.Unmarshal([]byte(line), &cm)
@@ -165,7 +163,8 @@ func Serve(c *Config) error {
 				}
 			}
 		}
-		return errors.New("unknown error")
+
+		panic(scanner.Err())
 	}
 
 	//
@@ -178,7 +177,6 @@ func Serve(c *Config) error {
 		0, greet,
 		timeout, func() {
 			if !active || remotePort == -1 {
-				//panic("RP not established within set timeout")
 				wg.Done()
 			}
 		},

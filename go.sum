@@ -70,6 +70,8 @@ github.com/gostones/ssh-chat v0.0.0-20181003210403-9e988951a23a h1:od5iOmRIlteaz
 github.com/gostones/ssh-chat v0.0.0-20181003210403-9e988951a23a/go.mod h1:ib6EjpQaatxTsEp7ydh4+B07cKVTAYIQkfSpxRn0B+c=
 github.com/gostones/ssh-chat v0.0.0-20181005192654-2622184dfbe9 h1:MguuuGzRR2ZOcKqz+ZYnQALumMZ2T9YhvDO3n+8IAJs=
 github.com/gostones/ssh-chat v0.0.0-20181005192654-2622184dfbe9/go.mod h1:xoW+fvBBry488MxyHrkWHyVVwE1Z6ApYFxPVJwKk6qM=
+github.com/gostones/ssh-chat v0.0.0-20181008225349-b570830f934a h1:cOXKLUeE+kK4hwhoaOnHZsuGD9KW76YsCkX2jklk2AU=
+github.com/gostones/ssh-chat v0.0.0-20181008225349-b570830f934a/go.mod h1:xoW+fvBBry488MxyHrkWHyVVwE1Z6ApYFxPVJwKk6qM=
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c h1:kQWxfPIHVLbgLzphqk3QUflDy9QdksZR4ygR807bpy0=
 github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 h1:BQSFePA1RWJOlocH6Fxy8MmwDt+yVQYULKfN0RoTN8A=

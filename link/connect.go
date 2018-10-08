@@ -99,11 +99,11 @@ func Connect(c *Config) error {
 
 		for scanner.Scan() {
 			line := scanner.Text()
-			if err != nil {
-				return err
-			}
-			fmt.Println("Got: ", line)
 
+			fmt.Println("Got: ", line)
+			if strings.HasPrefix(line, "/") {
+				continue
+			}
 			cm := ChatMessage{}
 			err := json.Unmarshal([]byte(line), &cm)
 			if err != nil {
@@ -141,7 +141,7 @@ func Connect(c *Config) error {
 			}
 		}
 
-		return errors.New("Unknown error")
+		panic(scanner.Err())
 	}
 
 	//
@@ -151,7 +151,6 @@ func Connect(c *Config) error {
 		0, greet,
 		timeout, func() {
 			if !active || remotePort == -1 || svcUser == "" {
-				//panic("RP not established within set timeout")
 				wg.Done()
 			}
 		},

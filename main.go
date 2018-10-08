@@ -273,33 +273,33 @@ func linkService(args []string) {
 		usage()
 	}
 
-	for {
-		lport := util.FreePort()
-		user := *name
-		if user == "" {
-			user = fmt.Sprintf("svc%v", lport)
-		}
-
-		cfg := &link.Config{
-			Host:  "localhost",
-			Port:  lport,
-			Proxy: *proxy,
-			URL:   *url,
-			MPort: *port,
-			UUID:  uuid.New().String(),
-			User:  user,
-
-			Service: &link.Service{
-				HostPort: *toHostPort,
-				Port:     rpsPort,
-			},
-		}
-
-		//
-		fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
-
-		link.Serve(cfg)
+	lport := util.FreePort()
+	user := *name
+	if user == "" {
+		user = fmt.Sprintf("svc%v", lport)
 	}
+
+	cfg := &link.Config{
+		Host:  "localhost",
+		Port:  lport,
+		Proxy: *proxy,
+		URL:   *url,
+		MPort: *port,
+		UUID:  uuid.New().String(),
+		User:  user,
+
+		Service: &link.Service{
+			HostPort: *toHostPort,
+			Port:     rpsPort,
+		},
+	}
+
+	//
+	fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
+	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
+
+	link.Serve(cfg)
+	fmt.Println("Failed to start service")
 }
 
 func parseInt(s string, v int) int {
