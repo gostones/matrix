@@ -24,7 +24,7 @@ require (
 	github.com/gostones/ssh-chat v0.0.0-20181005192654-2622184dfbe9
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
-	github.com/jessevdk/go-flags v1.3.0
+	github.com/jessevdk/go-flags v1.4.0
 	github.com/jpillora/ansi v0.0.0-20170202005112-f496b27cd669
 	github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7
 	github.com/jpillora/chisel v0.0.0-20171123140225-12fec693f1ca
@@ -60,8 +60,9 @@ require (
 	github.com/xtaci/smux v1.0.7
 	golang.org/x/crypto v0.0.0-20170825220121-81e90905daef
 	golang.org/x/net v0.0.0-20180925072008-f04abc6bdfa7
-	golang.org/x/sys v0.0.0-20180117170059-2c42eef0765b
+	golang.org/x/sys v0.0.0-20181005133103-4497e2df6f9e
 	golang.org/x/text v0.3.0
+	golang.org/x/tools v0.0.0-20181006002542-f60d9635b16a // indirect
 	gopkg.in/src-d/go-billy.v4 v4.1.1
 	gopkg.in/src-d/go-git.v4 v4.3.0
 	gopkg.in/warnings.v0 v0.1.2
