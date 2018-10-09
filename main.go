@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/google/uuid"
@@ -11,8 +12,11 @@ import (
 	"github.com/gostones/matrix/ssh"
 	"github.com/gostones/matrix/tunnel"
 	"github.com/gostones/matrix/util"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 //
@@ -28,6 +32,10 @@ var help = `
 `
 
 //
+var (
+	serviceReady = false
+)
+
 func main() {
 
 	flag.Bool("help", false, "")
@@ -76,11 +84,16 @@ bind_port = %v
 const matrixPort = 2022
 const rpsPort = 8000
 
+const bindPort = 8080
+const listenPort = 8080
+
+const probePort = 8081
+
 func server(args []string) {
 	flags := flag.NewFlagSet("server", flag.ContinueOnError)
 
 	//tunnel port
-	bind := flags.Int("bind", parseInt(os.Getenv("PORT"), 8080), "")
+	bind := flags.Int("bind", parseInt(os.Getenv("PORT"), bindPort), "")
 
 	//chat port
 	port := flags.Int("port", parseInt(os.Getenv("MATRIX_PORT"), matrixPort), "")
@@ -211,7 +224,10 @@ func linkConnect(args []string) {
 	name := flags.String("name", "", "")
 
 	toName := flags.String("service", "", "remote service name")
-	listenPort := flags.Int("listen", util.FreePort(), "local port for exposing remote service")
+
+	listenPort := flags.Int("listen", listenPort, "local port for exposing remote service")
+
+	probe := flags.Int("probe", probePort, "local port for health check")
 
 	flags.Parse(args)
 
@@ -242,14 +258,33 @@ func linkConnect(args []string) {
 			Name: *toName,
 			Port: *listenPort,
 		},
+
+		Ready: make(chan bool),
 	}
 	//
-	fmt.Fprintf(os.Stdout, "link service: %v user: %v\n", cfg, user)
+	fmt.Printf("Link connect: %v user: %v\n", cfg, user)
 
-	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
+	go func() {
+		tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
+		fmt.Printf("@@@ Link tunnel returned user: %v\n", user)
 
-	link.Connect(&cfg)
-	fmt.Println("Failed to connect")
+	}()
+
+	go func() {
+		timed(func() error {
+			return link.Connect(&cfg)
+		})
+		fmt.Printf("@@@@ Link connect returned user: %v ready: %v\n", user, serviceReady)
+	}()
+
+	go func() {
+		for {
+			serviceReady = <-cfg.Ready
+			fmt.Printf("@@@@ Link connect service ready: %v\n", serviceReady)
+		}
+	}()
+
+	startWebServer(*probe)
 }
 
 func linkService(args []string) {
@@ -262,6 +297,7 @@ func linkService(args []string) {
 	name := flags.String("name", "", "")
 
 	toHostPort := flags.String("hostport", "", "reverse proxy service host:port")
+	probe := flags.Int("probe", probePort, "local port for health check")
 
 	flags.Parse(args)
 
@@ -292,14 +328,31 @@ func linkService(args []string) {
 			HostPort: *toHostPort,
 			Port:     rpsPort,
 		},
+
+		Ready: make(chan bool),
 	}
 
 	//
 	fmt.Fprintf(os.Stdout, "Staring link service: %v user: %v\n", cfg, cfg.User)
-	go tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
+	go func() {
+		tunnel.TunClient(*proxy, *url, fmt.Sprintf("localhost:%v:localhost:%v", lport, *port))
+		fmt.Fprintf(os.Stdout, "@@@ Kink service tunnel returned: %v user: %v\n", cfg, cfg.User)
 
-	link.Serve(cfg)
-	fmt.Println("Failed to start service")
+	}()
+	go func() {
+		timed(func() error {
+			return link.Serve(cfg)
+		})
+		fmt.Printf("@@@@ Link service returned ready: %v", serviceReady)
+	}()
+	go func() {
+		for {
+			serviceReady = <-cfg.Ready
+			fmt.Printf("@@@@ Link service readdy: %v\n", serviceReady)
+		}
+	}()
+
+	startWebServer(*probe)
 }
 
 func parseInt(s string, v int) int {
@@ -311,4 +364,53 @@ func parseInt(s string, v int) int {
 		i = v
 	}
 	return i
+}
+
+func startWebServer(port int) {
+	type Health struct {
+		Status    string `json:"status"`
+		Timestamp int64  `json:"timestamp"`
+	}
+
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		m := &Health{
+			Status:    serviceStatus(),
+			Timestamp: toTimestamp(time.Now()),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if serviceReady {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		b, _ := json.Marshal(m)
+		fmt.Fprintf(w, string(b))
+	})
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+}
+
+func serviceStatus() string {
+	if serviceReady {
+		return "UP"
+	}
+	return "DOWN"
+}
+
+func toTimestamp(d time.Time) int64 {
+	return d.UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+}
+
+func timed(fn func() error) {
+	timeout := 120 * 1000
+	min := 1 * 1000
+	max := 30 * 1000
+
+	boom := func() {
+		if !serviceReady {
+			os.Exit(1)
+		}
+	}
+
+	util.Timed(timeout, boom, min, max, fn)
 }

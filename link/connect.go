@@ -3,13 +3,10 @@ package link
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/gostones/matrix/util"
 	"golang.org/x/crypto/ssh"
 	"os"
 	"strings"
-	"sync"
 )
 
 // Connect to remote service
@@ -18,29 +15,16 @@ func Connect(c *Config) error {
 	var remotePort = -1
 	var svcUser = ""
 
-	var timeout = 60 * 1000 // 1 min
+	var timeout = 120 * 1000 // 2 min
 
 	fmt.Fprintf(os.Stdout, "Connect proxy: %v server: %v\n", c.Proxy, c.URL)
 
 	addr := fmt.Sprintf("%s:%d", c.Host, c.Port)
 
-	var conn *ssh.Client
-	var err error
-
-	fn := func() error {
-		conn, err = dial(addr, c.User, timeout)
+	conn, err := dial(addr, c.User, timeout)
+	if err != nil {
 		return err
 	}
-
-	boomer := func() {
-		if conn == nil {
-			panic("timeout")
-		}
-	}
-	min := 100
-	max := 3 * 1000 //3 sec
-
-	util.Timed(0, nil, timeout, boomer, min, max, fn)
 
 	session, err := conn.NewSession()
 	if err != nil {
@@ -68,10 +52,7 @@ func Connect(c *Config) error {
 	}
 
 	//
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	greet := func() {
+	greet := func() error {
 		meMsg := fmt.Sprintf(`/me {"name": "%v", "type": "link", "addr": "%v", "status": "on" , "uuid": "%v"}`, c.User, addr, c.UUID)
 		whoisMsg := fmt.Sprintf(`/whois %v`, c.Service.Name)
 
@@ -83,14 +64,20 @@ func Connect(c *Config) error {
 			_, err := send(in, meMsg)
 			fmt.Printf("greet: %v\n", err)
 
-			if err == nil {
-				active = true
+			if err != nil {
+				return err
 			}
+			active = true
 		}
 		if active && remotePort == -1 {
 			_, err := send(in, whoisMsg)
 			fmt.Printf("greet: %v\n", err)
+			if err != nil {
+				return err
+			}
 		}
+
+		return nil
 	}
 
 	//
@@ -125,6 +112,9 @@ func Connect(c *Config) error {
 
 					fmt.Printf("whois response: %v user: %v\n", cm.Msg, svcUser)
 					go tun(c, remotePort)
+
+					//notify
+					c.Ready <- true
 				}
 
 				if cm.Type == "presence" && cm.Msg["who"] == svcUser {
@@ -134,28 +124,27 @@ func Connect(c *Config) error {
 						remotePort = -1
 						svcUser = ""
 
-						wg.Done()
-						return nil
+						//
+						c.Ready <- false
 					}
 				}
 			}
 		}
 
-		panic(scanner.Err())
+		return scanner.Err()
 	}
 
 	//
-	greet()
+	fmt.Printf("Connect greeting\n")
 
-	util.Timed(
-		0, greet,
-		timeout, func() {
-			if !active || remotePort == -1 || svcUser == "" {
-				wg.Done()
-			}
-		},
-		min, max, handle)
+	err = greet()
+	if err != nil {
+		return err
+	}
 
-	wg.Wait()
-	return errors.New("ERROR")
+	fmt.Printf("Connect handle msg\n")
+
+	err = handle()
+
+	return err
 }

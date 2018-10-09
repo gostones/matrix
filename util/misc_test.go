@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 )
@@ -20,74 +19,72 @@ func TestBackoffDuration(t *testing.T) {
 }
 
 func TestTimedBoom(t *testing.T) {
+	t.Log("Test timeout")
 
-	ticker := func() {
-		fmt.Print(" . ")
-	}
+	dur := 500
 
-	t.Logf("Test timeout")
+	timedout := false
 
 	Timed(
-		100, ticker,
-		1000, func() {
-			fmt.Println("Boom timeout ...")
-
+		dur, func() {
+			timedout = true
+			fmt.Println("should timeout ...")
 		},
-		100, 500, func() error {
+		0, 0, func() error {
 			select {}
 		})
+	if !timedout {
+		t.Fail()
+	}
 }
 
 func TestTimedComplete(t *testing.T) {
+	t.Log("Test complete")
 
-	ticker := func() {
-		fmt.Print(" . ")
-	}
+	dur := 1000
 
-	t.Logf("Test complete")
+	timedout := false
 
 	Timed(
-		100, ticker,
-		30000, func() {
-			fmt.Println("Boom complete ...")
+		dur*10, func() {
+			timedout = true
+			t.Log("should not be called ...")
 		},
-		100, 500, func() error {
-			time.Sleep(500 * time.Millisecond)
+		dur/2, dur*2, func() error {
+			time.Sleep(time.Duration(dur) * time.Millisecond)
 
-			fmt.Println("Return complete ...")
+			t.Log("Return complete ...")
 			return nil
 		})
+	if timedout {
+		t.Fail()
+	}
 }
 
 func TestTimedRunning(t *testing.T) {
 
-	ticker := func() {
-		fmt.Print(" . ")
-	}
+	t.Log("Test keep running")
 
-	t.Logf("Test keep running")
+	dur := 100
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	connected := false
 
 	Timed(
-		100, ticker,
-		500, func() {
-			fmt.Println("Boom keep running ...")
-			//terminate
-			select {
-			case <-time.After(2 * time.Second):
-				wg.Done()
-			}
-			wg.Wait()
+		dur, func() {
+			t.Log("Boom keep running ...")
+			//check if we should exit or keep running
+			connected = true
 		},
-		100, 500, func() error {
+		dur/5, dur*5, func() error {
 		loop:
 			{
 				fmt.Print(" X ")
-				time.Sleep(1 * time.Second)
+				time.Sleep(time.Duration(dur) * time.Millisecond)
 
 			}
 			goto loop
 		})
+	if !connected {
+		t.Fail()
+	}
 }
